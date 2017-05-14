@@ -5,6 +5,10 @@ import aiomysql
 
 logging.basicConfig(level=logging.INFO)
 
+def log(sql, args):
+    logging.info('SQL: %s' % sql)
+
+
 # 创建出数据库连接池
 # 连接池由全局变量__pool存储，缺省情况下将编码设置为utf8，自动提交事务
 async def create_pool(loop, **kw):
@@ -14,9 +18,9 @@ async def create_pool(loop, **kw):
         # **kw参数可以包含所有连接需要用到的关键字参数
         host=kw.get('host', '127.0.0.1'),
         port=kw.get('port', 3306),
-        user=kw['root'],
-        password=kw['root'],
-        db=kw['db'],
+        user=kw['user'],
+        password=kw['password'],
+        db=kw['database'],
         charset=kw.get('charset', 'utf8'),
         autocommit=kw.get('autocommit', True),  # 自动提交
         # 默认最大连接数为10
@@ -29,7 +33,7 @@ async def create_pool(loop, **kw):
 
 # 要执行SELECT语句，我们用select函数执行，需要传入SQL语句和SQL参数
 async def select(sql, args, size=None):
-    logging.log(sql, args)
+    log(sql, args)
     global __pool
     # 从数据库连接池中获取一个数据库连接
     with (await __pool) as conn:
@@ -49,7 +53,7 @@ async def select(sql, args, size=None):
 
 # 要执行INSERT、UPDATE、DELETE语句，可以定义一个通用的execute()函数
 async def execute(sql, args):
-    logging.log(sql, args)
+    log(sql, args)
     global __pool
     with (await __pool) as conn:
         try:
@@ -273,3 +277,7 @@ class IntegerField(Field):
 class FloatField(Field):
     def __init__(self, name=None, primary_key=False, default=0.0):
         super().__init__(name, 'real', primary_key, default)
+
+class TextField(Field):
+    def __init__(self, name=None, default=None):
+        super().__init__(name, 'text', False, default)
