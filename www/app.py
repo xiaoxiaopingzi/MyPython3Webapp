@@ -2,9 +2,9 @@
 """基本的架构"""
 import logging
 import asyncio
+import aiomysql
 import os, json, time
 from datetime import datetime
-
 from aiohttp import web
 
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +18,7 @@ async def init(loop):
     app = web.Application(loop=loop)
     app.router.add_route('GET', '/', index)
     srv = await loop.create_server(app.make_handler(), '127.0.0.1', 8000)
-    logging.info('server started at http://127.0.0.1:9000...')  # 用日志记录
+    logging.info('server started at http://127.0.0.1:8000...')  # 用日志记录
     return srv
 
 
