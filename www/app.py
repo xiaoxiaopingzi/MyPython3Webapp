@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""基本的架构"""
+"""基本架构"""
 import logging
 import asyncio
 import aiomysql

@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""用于代码编写过程中的额一些测试"""
+"""用于代码编写过程中的一些测试"""
 import orm
 from models import User, Blog, Comment
 import asyncio
