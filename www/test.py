@@ -1,7 +1,10 @@
 # -*- coding: UTF-8 -*-
 """用于代码编写过程中的一些测试"""
-import orm
-from models import User, Blog, Comment
+try:
+    import orm
+    from models import User, Blog, Comment
+except ImportError:
+    raise ImportError('The file is not found. Please check the file name!')
 import asyncio
 
 

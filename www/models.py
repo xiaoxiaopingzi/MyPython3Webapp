@@ -1,9 +1,10 @@
 # -*- coding: UTF-8 -*-
 """需要用到的三个模型"""
-
 import time, uuid
-
-from orm import Model, StringField, BooleanField, FloatField, TextField
+try:
+    from orm import Model, StringField, BooleanField, FloatField, TextField
+except ImportError:
+    raise ImportError('The file is not found. Please check the file name!')
 
 # 通过UUID以及当前的时间来生成id
 def next_id():
