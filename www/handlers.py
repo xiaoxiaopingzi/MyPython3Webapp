@@ -1,14 +1,15 @@
 # -*- coding: UTF-8 -*-
-"""  """
+"""具体的函数"""
+import asyncio
 try:
-    from requestHandler import get
-    from models import User
+    from requestHandler import get, post
+    from models import User, Comment, Blog, next_id
 except ImportError:
     raise ImportError('The file is not found. Please check the file name!')
 
 @get('/')
-def index(request):
-    users = yield from User.findAll()
+async def index(request):
+    users = await User.findAll()
     return {
         '__template__': 'index.html',
         'users': users

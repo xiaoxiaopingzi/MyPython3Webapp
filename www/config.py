@@ -45,19 +45,28 @@ def merge(defaults, override):
     return r
 
 # 增加x.y的取值功能
+# def toDict2(d):  # d是dict
+#     D = Dict()
+#     for k, v in d.items():
+#         # 下面的一条语句相当于以下的if-else语句
+#         # if isinstance(v, dict):
+#         #     D[k] = toDict(v)
+#         # else:
+#         #     D[k]  = v
+#         D[k] = toDict(v) if isinstance(v, dict) else v
+#     return D
+
+# 增加x.y的取值功能
 def toDict(d):  # d是dict
     D = Dict()
     for k, v in d.items():
-        # 下面的一条语句相当于以下的if-else语句
-        # if isinstance(v, dict):
-        #     D[k] = toDict(v)
-        # else:
-        #     D[k]  = v
-        D[k] = toDict(v) if isinstance(v, dict) else v
+        if isinstance(v, dict):
+            for k2, v2 in v.items():
+                D[k2] = v2
+        else:
+            D[k] = v
     return D
-
 configs = config_default.configs   # config_default.configs是取config_default.py文件的config变量
 configs = merge(configs, config_override.configs)
 # 通过toDict()方法来得到x.y的取值功能
 configs = toDict(configs)
-
