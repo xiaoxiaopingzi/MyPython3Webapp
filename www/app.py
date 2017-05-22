@@ -5,6 +5,7 @@ import asyncio
 from aiohttp import web
 try:
     from requestHandler import add_routes, logger_factory, response_factory
+    from requestHandler import init__jinja2, add_static, datetime_filter
     import orm
 except ImportError:
     raise ImportError('The file is not found. Please check the file name!')
