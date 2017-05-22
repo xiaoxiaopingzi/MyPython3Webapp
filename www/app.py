@@ -6,14 +6,14 @@ from aiohttp import web
 try:
     from requestHandler import add_routes, logger_factory, response_factory
     from requestHandler import init__jinja2, add_static, datetime_filter
-    import orm
+    import orm, config
 except ImportError:
     raise ImportError('The file is not found. Please check the file name!')
 
 logging.basicConfig(level=logging.INFO)
 
 async def init(loop):
-    await orm.create_pool(loop=loop, **configs.db)
+    await orm.create_pool(loop=loop, **config.configs)
     # middlewares(中间件)设置2个中间处理函数(都是装饰器)
     # middlewares中的每个factory接受两个参数，app 和 handler(即middlewares中的下一个handler)
     # 譬如这里logger_factory的handler参数其实就是response_factory

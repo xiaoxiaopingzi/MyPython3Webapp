@@ -52,10 +52,21 @@ def post(path):
 
     return decorator
 
+# ----使用inspect模块中的signature方法来获取函数的参数，实现一些复用功能--
+# inspect.Parameter 的类型有5种：
+# POSITIONAL_ONLY       只能是位置参数
+# KEYWORD_ONLY          关键字参数且提供了key
+# VAR_POSITIONAL        相当于是 *args
+# VAR_KEYWORD           相当于是 **kw
+# POSITIONAL_OR_KEYWORD
 def get_required_kw_args(fn):
     args = []
+    # 将参数名称按顺序映射到相应的Parameter对象
     params = inspect.signature(fn).parameters
     for name, param in params.items():
+        # Parameter.default——参数的默认值,如果参数没有默认值,则该属性设置为Parameter.empty
+        # Parameter.empty——指定缺少默认值和注释的特殊类级标记
+        # 如果url处理函数需要传入关键字参数，且默认是空的话，获取这个key
         if param.kind == inspect.Parameter.KEYWORD_ONLY and param.default == inspect.Parameter.empty:
             args.append(name)
     return tuple(args)
@@ -64,31 +75,37 @@ def get_named_kw_args(fn):
     args = []
     params = inspect.signature(fn).parameters
     for name, param in params.items():
+        # 如果url处理函数需要传入关键字参数，获取这个key
         if param.kind == inspect.Parameter.KEYWORD_ONLY:
             args.append(name)
     return tuple(args)
 
+# 判断请求的url中是否有关键字参数
 def has_named_kw_args(fn):
     params = inspect.signature(fn).parameters
     for name, param in params.items():
         if param.kind == inspect.Parameter.KEYWORD_ONLY:
             return True
 
+# 判断请求的url中是否有*args参数
 def has_var_kw_arg(fn):
     params = inspect.signature(fn).parameters
     for name, param in params.items():
         if param.kind == inspect.Parameter.VAR_KEYWORD:
             return True
 
+# 判断请求的url中是否有key为request的关键字参数,有则返回True，否则返回False
 def has_request_arg(fn):
     sig = inspect.signature(fn)
     params = sig.parameters
     found = False
+    # 判断是否存在一个参数叫做request，并且该参数要在其他普通的位置参数之后
     for name, param in params.items():
         if name == 'request':
             found = True
             continue
         if found and (param.kind != inspect.Parameter.VAR_POSITIONAL and param.kind != inspect.Parameter.KEYWORD_ONLY and param.kind != inspect.Parameter.VAR_KEYWORD):
+            # request参数必须是函数中最后的命名参数
             raise ValueError('request parameter must be the last named parameter in function: %s%s' % (fn.__name__, str(sig)))
     return found
 
@@ -112,6 +129,7 @@ class RequestHandler(object):
         kw = None
         # 如果有需要处理的参数
         if self._has_var_kw_arg or self._has_named_kw_args or self._required_kw_args:
+            # POST提交的参数可以直接获取
             if request.method == 'POST':
                 if not request.content_type:
                     return web.HTTPBadRequest('Missing Content-Type.')
@@ -130,7 +148,7 @@ class RequestHandler(object):
                 qs = request.query_string
                 if qs:
                     kw = dict()
-                    # 解析url中?后面的键值对内容保存到request_content
+                    # 解析url中?后面的键值对内容并保存到request_content
                     '''
                     qs = 'first=f,s&second=s'
                     parse.parse_qs(qs, True).items()
@@ -164,6 +182,7 @@ class RequestHandler(object):
                 if k in kw:
                     logging.warning('Duplicate arg name in named arg and kw args: %s' % k)
                 kw[k] = v
+        # 将request参数添加到kw字典中
         if self._has_request_arg:
             kw['request'] = request
         # check required kw: 检查是否有必须关键字参数
@@ -172,9 +191,9 @@ class RequestHandler(object):
                 if not name in kw:
                     return web.HTTPBadRequest('Missing argument: %s' % name)
         # 以上代码均是为了获取调用参数
-        logging.info('call with args: %s' % str(kw))
+        logging.info('call with args: %s' % str(kw))  # 打印所有的参数
         try:
-            r = await self._func(**kw)
+            r = await self._func(**kw)  # 将请求的url后面带上的参数作为函数fn的参数，等待函数fn的执行结果
             return r
         except APIError as e:
             return dict(error=e.error, data=e.data, message=e.message)
@@ -196,19 +215,19 @@ def add_route(app, fn):
     logging.info(
         'add route %s %s => %s(%s)' % (method, path, fn.__name__, ', '.join(inspect.signature(fn).parameters.keys())))
     # 正式注册为对应的url处理函数
-    # RequestHandler类的实例是一个可以call的函数
-    # 自省函数 '__call__'
-    app.router.add_route(method, path, RequestHandler(app, fn))
+    # RequestHandler类的实例是一个可以被call的函数
+    app.router.add_route(method, path, RequestHandler(app, fn))   # 注册处理函数
 
 
 # 添加CSS等静态文件所在路径
 def add_static(app):
+    # 获取当前文件所在的文件夹下的static文件夹的路径
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    app.router.add_static('/static/', path)
+    app.router.add_static('/static/', path)  # 添加静态文件
     logging.info('add static %s => %s' % ('/static/', path))
 
 def add_routes(app, module_name):
-    # rfind()函数的作用是返回'.'在字符串module_name中最大的索引,返回-1则表示每找到'.'符号
+    # rfind()函数的作用是返回'.'在字符串module_name中最大的索引,返回-1则表示没找到'.'符号
     n = module_name.rfind('.')
     if n == (-1):
         # __import__ 作用同import语句，但__import__是一个函数，并且只接收字符串作为参数,
@@ -228,7 +247,7 @@ def add_routes(app, module_name):
             if method and path:
                 add_route(app, fn)
 
-
+# 在调用方法之前，用日志记录请求的方法(GET或者POST)以及路径
 async def logger_factory(app, handler):
     async def logger(request):
         logging.info('Request: %s %s' % (request.method, request.path))
@@ -236,6 +255,8 @@ async def logger_factory(app, handler):
         return (await handler(request))
     return logger
 
+# 如果请求的方式是POST，并且请求的类型是application/json或者application/x-www-form-urlencoded
+# 就用日志记录请求的参数
 async def data_factory(app, handler):
     async def parse_data(request):
         if request.method == 'POST':
@@ -248,6 +269,15 @@ async def data_factory(app, handler):
         return (await handler(request))
     return parse_data
 
+# 请求对象request的处理工序流水线先后依次是：
+#     logger_factory->response_factory->RequestHandler().__call__->get或post->handler
+# 对应的响应对象response的处理工序流水线先后依次是:
+# 由handler构造出要返回的具体对象
+# 然后在这个返回的对象上加上'__method__'和'__route__'属性，以标识别这个对象并使接下来的程序容易处理
+# RequestHandler目的就是从请求对象request的请求content中获取必要的参数，调用URL处理函数,然后把结果返回给response_factory
+# response_factory在拿到经过处理后的对象，经过一系列类型判断，构造出正确web.Response对象，以正确的方式返回给客户端
+# 在这个过程中，只关心handler的处理，其他的都走统一通道，如果需要差异化处理，就在通道中选择适合的地方添加处理代码。
+# 注：在response_factory中应用了jinja2来渲染模板文件
 async def response_factory(app, handler):
     async def response(request):
         logging.info('Response handler...')
@@ -271,6 +301,7 @@ async def response_factory(app, handler):
                 resp.content_type = 'application/json;charset=utf-8'
                 return resp
             else:
+                # 使用模板对网页进行渲染
                 resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
                 return resp
@@ -280,43 +311,55 @@ async def response_factory(app, handler):
             t, m = r
             if isinstance(t, int) and t >= 100 and t < 600:
                 return web.Response(t, str(m))
-        # default:
+        # default,默认是纯文本文件:
         resp = web.Response(body=str(r).encode('utf-8'))
         resp.content_type = 'text/plain;charset=utf-8'
         return resp
     return response
 
+# 用于显示时间戳参数t与当前时间的差值
 def datetime_filter(t):
+    # 根据参数t获取当前时间与t时间之间的差值，dalta表示的是时间戳
     delta = int(time.time() - t)
-    if delta < 60:
+    if delta < 60:   # 1分钟为60秒
         return u'1分钟前'
-    if delta < 3600:
-        return u'%s分钟前' % (delta // 60)
-    if delta < 86400:
+    if delta < 3600:  # 1小时为3600秒
+        return u'%s分钟前' % (delta // 60)   # //表示除(取整)
+    if delta < 86400:  # 24小时为86400秒
         return u'%s小时前' % (delta // 3600)
-    if delta < 604800:
+    if delta < 604800:   # 24*7小时(即7天)为86400秒
         return u'%s天前' % (delta // 86400)
-    dt = datetime.fromtimestamp(t)
+    # 如果参数t所表示的时间在当前时间的7天之前，则直接根据时间戳t的值来显示时间
+    dt = datetime.fromtimestamp(t)    # 将时间戳转化为时间
     return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
 
-def init_jinja2(app, **kw):
+def init__jinja2(app, **kw):
     logging.info('init jinja2...')
     options = dict(
-        autoescape = kw.get('autoescape', True),
-        block_start_string = kw.get('block_start_string', '{%'),
-        block_end_string = kw.get('block_end_string', '%}'),
-        variable_start_string = kw.get('variable_start_string', '{{'),
-        variable_end_string = kw.get('variable_end_string', '}}'),
-        auto_reload = kw.get('auto_reload', True)
+        # 自动转义xml/html的特殊字符
+        autoescape=kw.get('autoescape', True),
+        # 代码块的开始结束标志
+        block_start_string=kw.get('block_start_string', '{%'),
+        block_end_string=kw.get('block_end_string', '%}'),
+        # 变量的开始结束标志
+        variable_start_string=kw.get('variable_start_string', '{{'),
+        variable_end_string=kw.get('variable_end_string', '}}'),
+        # 当模板文件被修改后，下次请求加载该模板文件的时候会自动重新加载修改后的模板文件
+        auto_reload=kw.get('auto_reload', True)
     )
+    # 获取模板文件的位置
     path = kw.get('path', None)
     if path is None:
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-    logging.info('set jinja2 template path: %s' % path)
+    logging.info('set jinja2 template path : %s' % path)
+    # Environment是jinjia2中的一个核心类，它的实例用来保存配置、全局对象以及模板文件的路径
     env = Environment(loader=FileSystemLoader(path), **options)
+    # filters: 一个字典描述的filters过滤器集合, 如果非模板被加载的时候, 可以安全的添加或较早的移除.
     filters = kw.get('filters', None)
     if filters is not None:
         for name, f in filters.items():
             env.filters[name] = f
+    # 所有的一切是为了给app添加__templating__字段
+    # 前面将jinja2的环境配置都赋值给env了，这里再把env存入app的dict中，这样app就知道要到哪儿去找模板，怎么解析模板。
     app['__templating__'] = env
