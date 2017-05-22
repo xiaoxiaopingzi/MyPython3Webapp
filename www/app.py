@@ -22,7 +22,7 @@ async def init(loop):
     # middlewares的最后一个元素的handler会通过routes查找到相应的，就是routes注册的对应handler处理函数
     # 这是装饰模式的体现，logger_factory, response_factory都是URL处理函数前（如handler.index）的装饰功能
     app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
-    init__jinja2(app, filters=dict(datetime=datetime_filter))
+    init__jinja2(app, filters=dict(datetime=datetime_filter))  # 定义时间过滤器
     # 添加URL处理函数
     add_routes(app, 'handlers')
     # 添加CSS等静态文件路径
