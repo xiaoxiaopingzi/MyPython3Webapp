@@ -23,7 +23,8 @@ def index(request):
     ]
     return {
         '__template__': 'blogs.html',
-        'blogs': blogs
+        'blogs': blogs,
+        'user': request.__user  # 这里要返回去
     }
 
 # 返回一个dict，后续的response这个middleware就可以把结果序列化为JSON并返回
@@ -34,7 +35,7 @@ async def api_get_users():
         u.passwd = '******'
     return dict(users=users)
 
-# 注册页面
+# 用户注册页面
 @get('/register')
 def register():
     return {
@@ -126,3 +127,9 @@ async def authenticate(*, email, passwd):
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
 
+# 用户登录页面
+@get('/signin')
+def signin():
+    return {
+        "__template__": 'signin.html'
+    }
