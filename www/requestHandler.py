@@ -287,6 +287,9 @@ async def auth_factory(app, handler):
             if user:  # 如果user不为None，表明这个cookie有效，则将user绑定到request对象中
                 logging.info('set current user: %s' % user.email)
                 request.__user__ = user
+        # 管理页面需要管理员权限才允许访问
+        if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
+            return web.HTTPFound('/signin')
         return (await handler(request))
     return auth
 

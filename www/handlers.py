@@ -150,9 +150,10 @@ def signout(request):
 # -----------------------------------------博客模块------------------------------------------------
 
 @get('/manage/blogs/create')
-def manage_create_blog():
+def manage_create_blog(request):
     return {
         '__template__': 'manage_blog_edit.html',
+        'user': request.__user__,  # 这里要返回去
         'id': '',
         'action': '/api/blogs'  # 对应HTML页面中Vue的action名字
     }

@@ -14,7 +14,6 @@ logging.basicConfig(level=logging.INFO)
 
 async def init(loop):
     kw = config.configs
-    print(kw)
     await orm.create_pool(loop=loop, **kw)
     # middlewares(中间件)设置2个中间处理函数(都是装饰器)
     # middlewares中的每个factory接受两个参数，app 和 handler(即middlewares中的下一个handler)
