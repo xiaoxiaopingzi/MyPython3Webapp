@@ -146,7 +146,7 @@ class ModelMetaclass(type):
 class Model(dict, metaclass=ModelMetaclass):
     def __init__(self, **kw):
         super(Model, self).__init__(**kw)
-
+    # 通过__getattr__和__setattr__方法使得能通过user.name的方式访问对象的属性
     # _getattr_用于查询不在__dict__系统中的属性
     def __getattr__(self, key):
         try:
