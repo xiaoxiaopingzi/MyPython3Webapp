@@ -5,14 +5,18 @@ import functools
 import inspect
 import logging
 import os
+import hashlib
 import time
 import json
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader
 from urllib import parse
 from aiohttp import web
+
 try:
     from apis import APIError
+    from config import configs
+    from models import User, Comment, Blog, next_id
 except ImportError:
     raise ImportError('The file is not found. Please check the file name!')
 
@@ -268,6 +272,52 @@ async def data_factory(app, handler):
                 logging.info('request form: %s' % str(request.__data__))
         return (await handler(request))
     return parse_data
+
+COOKIE_NAME = 'myblogsession'
+_COOKIE_KEY = configs.secret
+async def auth_factory(app, handler):
+    async def auth(request):
+        logging.info('check user: %s %s' % (request.method, request.path))
+        request.__user__ = None
+        # 从request中根据cookie的名字获取cookies
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        if cookie_str:
+            # 解析cookie，获取user对象
+            user = await cookie2user(cookie_str)
+            if user:  # 如果user不为None，表明这个cookie有效，则将user绑定到request对象中
+                logging.info('set current user: %s' % user.email)
+                request.__user__ = user
+        return (await handler(request))
+    return auth
+
+# 对cookie进行解析
+async def cookie2user(cookie_str):
+    """
+    Parse cookie and load user if cookie is valid.
+    """
+    if not cookie_str:
+        return None
+    try:
+        L = cookie_str.split('-')
+        if len(L) != 3:
+            return None
+        uid, expires, sha1 = L
+        # 如果当前时间大于cookie的过期时间，就直接返回None
+        if int(expires) < time.time():
+            return None
+        user = await User.find(uid)
+        if user is None:
+            return None
+        s = '%s-%s-%s-%s' % (uid, user.passwd, expires, _COOKIE_KEY)
+        if sha1 != hashlib.sha1(s.encode('utf-8')).hexdigest():
+            logging.info('invalid sha1')
+            return None
+        user.passwd = '********'
+        return user
+    except Exception as e:
+        logging.exception(e)
+        return None
+
 
 # 请求对象request的处理工序流水线先后依次是：
 #     logger_factory->response_factory->RequestHandler().__call__->get或post->handler

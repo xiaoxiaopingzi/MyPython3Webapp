@@ -4,7 +4,7 @@ import logging
 import asyncio
 from aiohttp import web
 try:
-    from requestHandler import add_routes, logger_factory, response_factory
+    from requestHandler import add_routes, logger_factory, response_factory, auth_factory
     from requestHandler import init__jinja2, add_static, datetime_filter
     import orm, config
 except ImportError:
@@ -21,7 +21,7 @@ async def init(loop):
     # 譬如这里logger_factory的handler参数其实就是response_factory
     # middlewares的最后一个元素的handler会通过routes查找到相应的，就是routes注册的对应handler处理函数
     # 这是装饰模式的体现，logger_factory, response_factory都是URL处理函数前（如handler.index）的装饰功能
-    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
+    app = web.Application(loop=loop, middlewares=[logger_factory, auth_factory, response_factory])
     init__jinja2(app, filters=dict(datetime=datetime_filter))  # 定义时间过滤器
     # 添加URL处理函数
     add_routes(app, 'handlers')
