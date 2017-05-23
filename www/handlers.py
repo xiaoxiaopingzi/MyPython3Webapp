@@ -24,7 +24,7 @@ def index(request):
     return {
         '__template__': 'blogs.html',
         'blogs': blogs,
-        'user': request.__user  # 这里要返回去
+        'user': request.__user__  # 这里要返回去
     }
 
 # 返回一个dict，后续的response这个middleware就可以把结果序列化为JSON并返回
