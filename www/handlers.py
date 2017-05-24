@@ -150,7 +150,7 @@ def signout(request):
 
 
 # -----------------------------------------博客模块------------------------------------------------
-# 添加新博客的页面
+# 添加新博文的页面
 @get('/manage/blogs/create')
 def manage_create_blog(request):
     return {
@@ -160,7 +160,7 @@ def manage_create_blog(request):
         'action': '/api/blogs'  # 对应HTML页面中Vue的action名字
     }
 
-# 分页列出所有的博客
+# 管理博文的页面
 @get('/manage/blogs')
 def manage_blogs(request, *, page='1'):
     return {
@@ -174,7 +174,7 @@ def check_admin(request):
     if request.__user__ is None or not request.__user__.admin:
         raise APIPermissionError()
 
-# 将用户添加的新博客添加到数据库中
+# 将用户添加的新博文添加到数据库中
 @post('/api/blogs')
 async def api_create_blog(request, *, name, summary, content):
     check_admin(request)
@@ -200,7 +200,7 @@ def get_page_index(page_str):
         p = 1
     return p
 
-# 使用api来获取分页的博客数据
+# 使用api来获取分页的博文数据
 @get('/api/blogs')
 async def api_blogs(*, page='1'):
     page_index = get_page_index(page)
@@ -211,6 +211,7 @@ async def api_blogs(*, page='1'):
     blogs = await Blog.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
     return dict(page=p, blogs=blogs)
 
+# 将文本中的特殊字符&、<、>转义，以便HTML在解析时能正确解析出原来的符号
 def text2html(text):
     # HTML转义字符
     # "     &quot;
@@ -223,37 +224,40 @@ def text2html(text):
                 filter(lambda s: s.strip() != '', text.split('\n')))
     return ''.join(lines)
 
+# 具体查看某一条博文
 @get('/blog/{id}')
-async def get_blog(id):
+async def get_blog(id, request):
     blog = await Blog.find(id)
     comments = await Comment.findAll('blog_id=?', [id], orderBy='created_at desc')
     for c in comments:
         c.html_content = text2html(c.content)
+        # 利用markdown2.py文件将普通的文本博客转化成使用Markdown语法的文件，以便展示成HTML文件
     blog.html_content = markdown2.markdown(blog.content)
     return {
         '__template__': 'blog.html',
         "blog": blog,
+        'user': request.__user__,
         'comments': comments
     }
 
-
+# 使用api来获取某一条具体的博文
 @get('/api/blogs/{id}')
 async def api_get_blog(*, id):
     blog = await Blog.find(id)
     return blog
 
-
+# 删除某一条博文
 @post('/api/blogs/delete/{id}')
 async def api_delete_blog(id, request):
     logging.info('删除博客的ID为：%s' % id)
-    check_admin(request)
+    check_admin(request)  # 有管理权限才能删除
     b = await Blog.find(id)
     if b is None:
         raise APIResourceNotFoundError('Blog')
     await b.remove()
     return dict(id=id)
 
-
+# 将修改后的博文保存到数据库中
 @post('/api/blogs/modify')
 async def api_modify_blog(request, *, id, name, summary, content):
     logging.info('修改的博客的ID为：%s' % id)
@@ -273,11 +277,12 @@ async def api_modify_blog(request, *, id, name, summary, content):
     await blog.update()
     return blog
 
-
+# 修改博文的页面
 @get('/manage/blogs/modify/{id}')
-def manage_modify_blog(id):
+def manage_modify_blog(id, request):
     return {
         '__template__': 'manage_blog_modify.html',
         'id': id,
+        'user': request.__user__,
         'action': '/api/blogs/modify'
     }
