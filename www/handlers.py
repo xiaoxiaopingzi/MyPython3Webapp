@@ -10,6 +10,7 @@ try:
     from apis import APIValueError, APIError
     from apis import APIPermissionError, Page, APIResourceNotFoundError
     from config import configs
+    import markdown2
 except ImportError:
     raise ImportError('The file is not found. Please check the file name!')
 
