@@ -19,6 +19,7 @@ $(function () {
             if (err) {
                 return $form.showFormError(err);
             }
+            //会重新reload这个页面
             refresh();
         });
     });
@@ -38,6 +39,7 @@ $(function () {
 
         <hr class="uk-article-divider">
 
+    <!--如果__user__有值，即用户已经登录，就显示发表评论的文本框，否则就不显示这个文本框-->
     {% if __user__ %}
         <h3>发表评论</h3>
 
@@ -65,6 +67,7 @@ $(function () {
         <h4>最新评论</h4>
 
         <ul class="uk-comment-list">
+            <!--如果comments中有值，则显示出所有的评论，否则就显示还没有人评论...-->
             {% for comment in comments %}
             <li>
                 <article class="uk-comment">

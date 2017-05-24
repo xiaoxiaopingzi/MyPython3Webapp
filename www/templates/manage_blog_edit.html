@@ -22,8 +22,9 @@
                             $form.showFormError(err);
                         }
                         else {
-                            alert('创建成功!')
-                            return location.assign('/api/blogs/' + r.id);
+                            //添加新博文完毕后跳转到博文管理页面
+                            return location.assign('/manage/blogs');
+//                          return location.assign('/api/blogs/' + r.id);
                         }
                     });
                 }
