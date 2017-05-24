@@ -7,7 +7,8 @@ from aiohttp import web
 try:
     from requestHandler import get, post
     from models import User, Comment, Blog, next_id
-    from apis import APIValueError, APIError, APIPermissionError
+    from apis import APIValueError, APIError
+    from apis import APIPermissionError, Page, APIResourceNotFoundError
     from config import configs
 except ImportError:
     raise ImportError('The file is not found. Please check the file name!')
@@ -148,23 +149,31 @@ def signout(request):
 
 
 # -----------------------------------------博客模块------------------------------------------------
-
+# 添加新博客的页面
 @get('/manage/blogs/create')
 def manage_create_blog(request):
     return {
         '__template__': 'manage_blog_edit.html',
-        'user': request.__user__,  # 这里要返回去
+        'user': request.__user__,  # 这里要返回去，用于显示当前登录的用户
         'id': '',
         'action': '/api/blogs'  # 对应HTML页面中Vue的action名字
     }
 
+# 分页列出所有的博客
+@get('/manage/blogs')
+def manage_blogs(request, *, page='1'):
+    return {
+        '__template__': 'manage_blogs.html',
+        'user': request.__user__,
+        'page_index': get_page_index(page)
+    }
 
 def check_admin(request):
     # 判断用户是否登录并且登录的用户是否有发表博客的权限,user对象的admin属性是一个布尔值
     if request.__user__ is None or not request.__user__.admin:
         raise APIPermissionError()
 
-# 添加一个新的博客
+# 将用户添加的新博客添加到数据库中
 @post('/api/blogs')
 async def api_create_blog(request, *, name, summary, content):
     check_admin(request)
@@ -176,4 +185,98 @@ async def api_create_blog(request, *, name, summary, content):
         raise APIValueError('content', 'content cannot be empty.')
     blog = Blog(user_id=request.__user__.id, user_name=request.__user__.name, user_image=request.__user__.image, name=name.strip(), summary=summary.strip(), content=content.strip())
     await blog.save()
+    # 返回一个dict,没有模板，会把信息直接显示出来
     return blog
+
+# 将表示数字的字符串转化为整形
+def get_page_index(page_str):
+    p = 1
+    try:
+        p = int(page_str)
+    except ValueError as e:
+        pass
+    if p < 1:
+        p = 1
+    return p
+
+# 使用api来获取分页的博客数据
+@get('/api/blogs')
+async def api_blogs(*, page='1'):
+    page_index = get_page_index(page)
+    blogs_count = await Blog.findNumber('count(id)')
+    p = Page(blogs_count, page_index)
+    if blogs_count == 0:
+        return dict(page=p, blogs=())
+    blogs = await Blog.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
+    return dict(page=p, blogs=blogs)
+
+def text2html(text):
+    # HTML转义字符
+    # "     &quot;
+    # &     &amp;
+    # <     &lt;
+    # >     &gt;
+    # 不断开空格 &nbsp;
+
+    lines = map(lambda s: '<p>%s</p>' % s.replace('&', '%amp;').replace('<', '&alt;').replace('>', '&gt;'),
+                filter(lambda s: s.strip() != '', text.split('\n')))
+    return ''.join(lines)
+
+@get('/blog/{id}')
+async def get_blog(id):
+    blog = await Blog.find(id)
+    comments = await Comment.findAll('blog_id=?', [id], orderBy='created_at desc')
+    for c in comments:
+        c.html_content = text2html(c.content)
+    blog.html_content = markdown2.markdown(blog.content)
+    return {
+        '__template__': 'blog.html',
+        "blog": blog,
+        'comments': comments
+    }
+
+
+@get('/api/blogs/{id}')
+async def api_get_blog(*, id):
+    blog = await Blog.find(id)
+    return blog
+
+
+@post('/api/blogs/delete/{id}')
+async def api_delete_blog(id, request):
+    logging.info('删除博客的ID为：%s' % id)
+    check_admin(request)
+    b = await Blog.find(id)
+    if b is None:
+        raise APIResourceNotFoundError('Blog')
+    await b.remove()
+    return dict(id=id)
+
+
+@post('/api/blogs/modify')
+async def api_modify_blog(request, *, id, name, summary, content):
+    logging.info('修改的博客的ID为：%s' % id)
+
+    if not name or not name.strip():
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary or not summary.strip():
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content or not content.strip():
+        raise APIValueError('content', 'content cannot be empty.')
+
+    blog = await Blog.find(id)
+    blog.name = name
+    blog.summary = summary
+    blog.content = content
+
+    await blog.update()
+    return blog
+
+
+@get('/manage/blogs/modify/{id}')
+def manage_modify_blog(id):
+    return {
+        '__template__': 'manage_blog_modify.html',
+        'id': id,
+        'action': '/api/blogs/modify'
+    }

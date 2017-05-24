@@ -1,7 +1,52 @@
 # -*- coding: UTF-8 -*-
+try:
+    from config import configs
+except ImportError:
+    raise ImportError('The file is not found. Please check the file name!')
 """
 JSON API definition.
 """
+
+class Page(object):
+    """
+    Page object for display pages.
+    """
+    def __init__(self, item_count, page_index=1):
+        """
+        Init pagination by item_count, page_index and page_size
+        """
+        # page_index 待查看那一页
+        # item_count 文章的总数
+        # page_size 每页显示的文章数量
+        # page_count 需要多少页才能所有的将文章全部显示出来
+        self.item_count = item_count
+        self.page_size = configs.page_size  # 从配置文件中读取page_size
+        # 1 if item_count % page_size > 0 else 0表示如果item_count % page_size > 0则返回1，否则返回0
+        self.page_count = item_count // configs.page_size + (1 if item_count % configs.page_size > 0 else 0)
+        if (item_count == 0) or (page_index > self.page_count):
+            self.offset = 0
+            self.limit = 0
+            self.page_index = 1
+        else:
+            # page_index 表明当前需要查看那一页
+            self.page_index = page_index
+            # offset表示sql的查询语句中的开始索引号
+            self.offset = self.page_size * (page_index - 1)
+            # limit表示sql查询语句中每次查询的记录数
+            self.limit = self.page_size
+        # 如果当前查看的那一页小于总页数，就说明有下一页
+        self.has_next = self.page_index < self.page_count
+        # 如果当前页大于1，就说明有上一页
+        self.has_previous = self.page_index > 1
+
+    def __str__(self):
+        return 'item_count: %s, page_count: %s, page_index: %s, page_size: %s, offset:%s, limit:%s' \
+                % (self.item_count, self.page_count, self.page_index, self.page_size, self.offset, self.limit)
+
+    __repr__ = __str__
+
+
+
 # 我们需要对Error进行处理，因此定义一个APIError，这种Error是指API调用时发生了逻辑错误（比如用户不存在），
 # 其他的Error视为Bug，返回的错误代码为internalerror
 class APIError(Exception):

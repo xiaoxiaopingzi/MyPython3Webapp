@@ -12,5 +12,6 @@ configs = {
     },
     'session': {
         'secret': 'MyBlog'
-    }
+    },
+    'page_size': 10
 }

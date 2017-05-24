@@ -70,5 +70,5 @@ if __name__ == "__main__":
     if argv[0] != 'python':
         argv.insert(0, 'python')
     command = argv
-    path = os.path.abspath('.')  # 获取当前文件的绝对路径
+    path = os.path.abspath('.')  # 获取当前文件所在的文件夹的绝对路径
     start_watch(path, None)
