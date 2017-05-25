@@ -57,6 +57,10 @@
         {% endfor %}
 
         <div class="meneame">
+            <span class="current">
+                共{{page.item_count}}条记录，每页显示{{page.page_size}}条，
+                共{{page.page_count}}页，当前第{{page.page_index}}页
+            </span>
             {% if page.page_index != 1 %}
                     <a href="#" onclick="gotoPage({{ page.page_index - 1}})">上一页</a>
             {% endif %}
