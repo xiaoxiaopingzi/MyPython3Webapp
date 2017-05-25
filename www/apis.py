@@ -15,6 +15,9 @@ class Page(object):
         """
         Init pagination by item_count, page_index and page_size
         """
+        # startIndex 页码数组的开始索引
+        # endIndex   页码数组的结束索引
+        # pageArray  页码数组
         # page_index 待查看那一页
         # item_count 文章的总数
         # page_size 每页显示的文章数量
@@ -34,10 +37,32 @@ class Page(object):
             self.offset = self.page_size * (page_index - 1)
             # limit表示sql查询语句中每次查询的记录数
             self.limit = self.page_size
+
+            # 生成页码数组
+            if self.page_count <= 10:
+                self.startIndex = 1
+                self.endIndex = self.page_count
+            else:
+                self.startIndex = page_index - 4
+                self.endIndex = page_index + 5
+                # 当前面不足4个页码时，就显示前10页
+                if self.startIndex < 1:
+                    self.startIndex = 1
+                    self.endIndex = 10
+                # 当后面不足5个页码时，就显示后10页
+                if self.endIndex > self.page_count:
+                    self.startIndex = self.page_count - 10 + 1
+                    self.endIndex = self.page_count
+
+            # 根据self.startIndex和self.endIndex生成索引数组
+            self.pageArray = [n for n in range(self.startIndex, self.endIndex + 1)]
+
         # 如果当前查看的那一页小于总页数，就说明有下一页
         self.has_next = self.page_index < self.page_count
         # 如果当前页大于1，就说明有上一页
         self.has_previous = self.page_index > 1
+
+
 
     def __str__(self):
         return 'item_count: %s, page_count: %s, page_index: %s, page_size: %s, offset:%s, limit:%s' \
