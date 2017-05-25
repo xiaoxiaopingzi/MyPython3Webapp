@@ -55,6 +55,7 @@ class Page(object):
                     self.endIndex = self.page_count
 
             # 根据self.startIndex和self.endIndex生成索引数组
+            # range函数中，当传入两个参数时，则将第一个参数做为起始位，第二个参数为结束位
             self.pageArray = [n for n in range(self.startIndex, self.endIndex + 1)]
 
         # 如果当前查看的那一页小于总页数，就说明有下一页
