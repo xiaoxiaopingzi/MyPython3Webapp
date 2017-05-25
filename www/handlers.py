@@ -17,32 +17,32 @@ except ImportError:
 # --------------------------------------主页---------------------------------------------------
 @get('/')
 async def index(request, *, page='1'):
-    # summary = "Lorem ipsum dolor sit amet, consectetur adipisicing elit," \
-    #           " sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
-    #
-    # blogs = [
-    #     Blog(id='1', name='Test Blog', summary=summary, created_at=time.time() - 120),
-    #     Blog(id='2', name='Something New', summary=summary, created_at=time.time() - 3600),
-    #     Blog(id='3', name='Learn Swift', summary=summary, created_at=time.time() - 7200)
-    # ]
-    page_index = get_page_index(page)
-    # 查找博客表里的条目数
-    num = await Blog.findNumber('count(id)')
-    # 没有条目则不显示
-    if not num or num == 0:
-        logging.info('the type of num is :%s' % type(num))
-        blogs = []
-    else:
-        page = Page(num, page_index)
-        # 根据计算出来的offset(取的初始条目index)和limit(取的条数)，来取出条目
-        blogs = await Blog.findAll(orderBy='created_at desc', limit=(page.offset, page.limit))
     return {
+        # '__template__'指定的模板文件是index.html，其他参数是传递给模板的数据
         '__template__': 'index.html',
         'user': request.__user__,
-        "page": page,
-        'blogs': blogs
-        # '__template__'指定的模板文件是index.html，其他参数是传递给模板的数据
+        "page_index": get_page_index(page)
     }
+
+# @get('/')
+# async def index(request, *, page='1'):
+#     page_index = get_page_index(page)
+#     num = await Blog.findNumber('count(id)')
+#     if not num or num == 0:
+#         logging.info('the type of num is :%s' % type(num))
+#         blogs = []
+#     else:
+#         page = Page(num, page_index)
+#         # 根据计算出来的offset(取的初始条目index)和limit(取的条数)，来取出条目
+#         blogs = await Blog.findAll(orderBy='created_at desc', limit=(page.offset, page.limit))
+#     return {
+#         # '__template__'指定的模板文件是blogs.html，其他参数是传递给模板的数据
+#         '__template__': 'blogs.html',
+#         'page': page,
+#         'user': request.__user__,
+#         'blogs': blogs
+#     }
+
 
 # -----------------------------------------用户模块-------------------------------------------
 

@@ -5,45 +5,46 @@
 {% block beforehead %}
 
 <script>
-function initVM(data) {
-console.log(data)
-    var vm = new Vue({
-        el: '#vm',
-        data: {
-            blogs: data.blogs,
-            page: data.page
-        },
-        methods: {
-            edit_blog: function (blog) {
-                location.assign('/manage/blogs/modify/' + blog.id);
+    function initVM(data) {
+        console.log(data)
+        var vm = new Vue({
+            el: '#vm',
+            data: {
+                blogs: data.blogs,
+                page: data.page
             },
-            delete_blog: function (blog) {
-                if (confirm('确认要删除“' + blog.name + '”？删除后不可恢复！')) {
-                    postJSON('/api/blogs/delete/' + blog.id , function (err, r) {
-                        if (err) {
-                            return alert(err.message || err.error || err);
-                        }
-                        //会重新reload这个页面
-                        refresh();
-                    });
+            methods: {
+                edit_blog: function (blog) {
+                    location.assign('/manage/blogs/modify/' + blog.id);
+                },
+                delete_blog: function (blog) {
+                    if (confirm('确认要删除“' + blog.name + '”？删除后不可恢复！')) {
+                        postJSON('/api/blogs/delete/' + blog.id , function (err, r) {
+                            if (err) {
+                                return alert(err.message || err.error || err);
+                            }
+                            //会重新reload这个页面
+                            refresh();
+                        });
+                    }
                 }
             }
-        }
-    });
-    $('#vm').show();
-}
-$(function() {
-    getJSON('/api/blogs', {
-        page: {{ page_index }}
-    }, function (err, results) {
-        if (err) {
-            return fatal(err);
-        }
-        $('#loading').hide();
-        console.log('page_index is ');
-        console.log({{page_index}});
-        initVM(results);
-    });
+        });
+        $('#vm').show();
+    }
+    $(function() {
+//      通过JsonApi获取分页的博文数据，将获取的结果赋给results
+        getJSON('/api/blogs', {
+            page: {{ page_index }}
+        }, function (err, results) {
+            if (err) {
+                return fatal(err);
+            }
+            $('#loading').hide();
+            console.log('page_index is ');
+            console.log({{page_index}});
+            initVM(results);
+        });
 });
 </script>
 

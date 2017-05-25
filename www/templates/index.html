@@ -3,18 +3,51 @@
 
 {% block title %}主页{% endblock %}
 
+{% block beforehead %}
+
+<script>
+    function initVM(data) {
+        $('#vm').show();
+        var vm = new Vue({
+            el: '#vm',
+            data: {
+                blogs: data.blogs,
+                page: data.page
+            }
+        });
+    }
+    $(function() {
+        getJSON('/api/blogs', {
+            page: {{ page_index }}
+        }, function (err, results) {
+            if (err) {
+                return fatal(err);
+            }
+            $('#loading').hide();
+            initVM(results);
+        });
+    });
+</script>
+
+
+
 {% block content %}
 
-    <div class="uk-width-medium-3-4">
-        {% for blog in blogs %}
-            <article class="uk-article">
-                <h2><a href="/blog/{{ blog.id }}">{{ blog.name }}</a></h2>
-                <p class="uk-article-meta">发表于{{ blog.created_at|datetime}}</p>
-                <p>{{ blog.summary }}</p>
-                <p><a href="/blog/{{ blog.id }}">继续阅读 <i class="uk-icon-angle-double-right"></i></a></p>
-            </article>
-            <hr class="uk-article-divider">
-        {% endfor %}
+    <div id="error" class="uk-width-1-1"></div>
+
+    <div id="loading" class="uk-width-1-1 uk-text-center">
+        <span><i class="uk-icon-spinner uk-icon-medium uk-icon-spin"></i> 正在加载...</span>
+    </div>
+
+    <div id="vm" class="uk-width-medium-3-4">
+        <article  v-repeat="blog: blogs" class="uk-article">
+            <h2><a v-attr="href: '/blog/'+blog.id" v-text="blog.name"></a></h2>
+            <p class="uk-article-meta">发表于<span v-text="blog.created_at.toDateTime()"></span></p>
+            <p><span v-text="blog.summary"></span></p>
+            <p><a v-attr="href: '/blog/'+blog.id">继续阅读 </a><i class="uk-icon-angle-double-right"></i></a></p>
+        </article>
+        <hr class="uk-article-divider">
+        <div v-component="pagination" v-with="page"></div>
     </div>
 
     <div class="uk-width-medium-1-4">

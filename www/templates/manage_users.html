@@ -5,30 +5,30 @@
 {% block beforehead %}
 
 <script>
-function initVM(data) {
-console.log(data)
-    $('#vm').show();
-    var vm = new Vue({
-        el: '#vm',
-        data: {
-            users: data.users,
-            page: data.page
-        }
+    function initVM(data) {
+    console.log(data)
+        $('#vm').show();
+        var vm = new Vue({
+            el: '#vm',
+            data: {
+                users: data.users,
+                page: data.page
+            }
+        });
+    }
+    $(function() {
+        getJSON('/api/users', {
+            page: {{ page_index }}
+        }, function (err, results) {
+            if (err) {
+                return fatal(err);
+            }
+            $('#loading').hide();
+            console.log('page_index is ');
+            console.log({{page_index}});
+            initVM(results);
+        });
     });
-}
-$(function() {
-    getJSON('/api/users', {
-        page: {{ page_index }}
-    }, function (err, results) {
-        if (err) {
-            return fatal(err);
-        }
-        $('#loading').hide();
-        console.log('page_index is ');
-        console.log({{page_index}});
-        initVM(results);
-    });
-});
 </script>
 
 {% endblock %}
